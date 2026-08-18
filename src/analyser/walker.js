@@ -2,21 +2,29 @@ import fs from "node:fs";
 import path from "node:path";
 
 const extensions = [".js", ".jsx", ".ts", ".tsx"];
+const ignoreDirs = ["node_modules", ".git", "dist", "build", "coverage"];
 
-const findFiles = (dir = "./") => {
+const findFiles = (dir = "./", fileList = []) => {
   const entries = fs.readdirSync(dir, {
-    recursive: true,
     withFileTypes: true,
   });
 
-  const files = entries
-    .filter(
-      (entry) =>
-        entry.isFile() && extensions.includes(path.extname(entry.name)),
-    )
-    .map((entry) => path.join(entry.parentPath, entry.name));
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
 
-  return files;
+    if (entry.isDirectory()) {
+      if (!ignoreDirs.includes(entry.name)) {
+        findFiles(fullPath, fileList);
+      }
+    } else if (
+      entry.isFile() &&
+      extensions.includes(path.extname(entry.name))
+    ) {
+      fileList.push(fullPath);
+    }
+  }
+
+  return fileList;
 };
 
 export { findFiles };
