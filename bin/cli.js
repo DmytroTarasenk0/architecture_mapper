@@ -2,7 +2,20 @@
 
 import ora from "ora";
 import chalk from "chalk";
+import { parseArgs } from "node:util";
 import { buildGraph } from "../src/analyser/parser.js";
+import { startServer } from "../src/server/index.js";
+
+const options = {
+  port: {
+    type: "string",
+    short: "p",
+  },
+};
+
+const { values } = parseArgs({ options, strict: false });
+
+const targetPort = values.port ? parseInt(values.port, 10) : 8888;
 
 console.log(chalk.bold.magenta("\nStarting Architecture Analysis...\n"));
 
@@ -15,9 +28,8 @@ try {
     spinner.succeed(
       chalk.green(`Successfully parsed ${graphData.length} files.`),
     );
-    console.log(chalk.gray("Ready to launch the web interface..."));
 
-    // todo: launch server and webpage
+    startServer("./", targetPort);
   }, 1000);
 } catch (error) {
   spinner.fail(chalk.red("Failed to build the architecture graph."));
