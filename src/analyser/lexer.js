@@ -141,6 +141,4 @@ const readTheFile = (path) => {
   return tokens;
 };
 
-console.log(readTheFile("src\\analyser\\lexer.js"));
-
 export { readTheFile };
