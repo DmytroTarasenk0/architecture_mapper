@@ -1,7 +1,12 @@
 import express from "express";
 import open from "open";
 import chalk from "chalk";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { buildGraph } from "../analyser/parser.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const startServer = (dir, port) => {
   const app = express();
@@ -10,6 +15,9 @@ const startServer = (dir, port) => {
     const graphData = buildGraph(dir);
     res.json(graphData);
   });
+
+  const uiPath = path.join(__dirname, "../../dist");
+  app.use(express.static(uiPath));
 
   const server = app.listen(port);
 
@@ -24,7 +32,7 @@ const startServer = (dir, port) => {
 
   server.once("listening", async () => {
     console.log(chalk.green(`Server running at http://localhost:${port}`));
-    await open(`http://localhost:${port}/graph`);
+    await open(`http://localhost:${port}/`);
   });
 };
 
