@@ -1,13 +1,46 @@
 import { findFiles } from "./walker.js";
 import { readTheFile } from "./lexer.js";
+import path from "node:path";
+import fs from "node:fs";
+
+// relative to the initial directory
+const unifyPath = (absolutePath) => {
+  const relPath = path.relative(process.cwd(), absolutePath);
+  return relPath.replace(/\\/g, "/");
+};
 
 const parseTokens = (tokens, filePath) => {
   let current = 0;
 
+  const absoluteFilePath = path.resolve(filePath);
+  const unifiedHostPath = unifyPath(absoluteFilePath);
+
   const fileData = {
-    file: filePath,
+    file: unifiedHostPath,
     imports: [],
     exports: [],
+  };
+
+  // relative "./" import or an npm package
+  const resolveImport = (importString) => {
+    if (importString.startsWith(".")) {
+      let absoluteImport = path.resolve(
+        path.dirname(absoluteFilePath),
+        importString,
+      );
+
+      if (!path.extname(absoluteImport)) {
+        if (fs.existsSync(absoluteImport + ".js")) absoluteImport += ".js";
+        else if (fs.existsSync(absoluteImport + ".ts")) absoluteImport += ".ts";
+        else if (fs.existsSync(absoluteImport + "/index.js"))
+          absoluteImport += "/index.js";
+        else if (fs.existsSync(absoluteImport + "/index.ts"))
+          absoluteImport += "/index.ts";
+      }
+
+      return unifyPath(absoluteImport);
+    }
+    return importString;
   };
 
   const isEOF = () => current >= tokens.length;
@@ -37,7 +70,11 @@ const parseTokens = (tokens, filePath) => {
         if (peek().type === "StringLiteral") {
           const pathToken = consume();
           const cleanPath = pathToken.value.slice(1, -1);
-          fileData.imports.push({ source: cleanPath, items: importedItems });
+
+          fileData.imports.push({
+            source: resolveImport(cleanPath),
+            items: importedItems,
+          });
         }
       }
     }
@@ -76,6 +113,8 @@ const parseTokens = (tokens, filePath) => {
 
     // COMMONJS part
     if (token.type === "Keyword" && token.value === "require") {
+      const requireIdx = current - 1;
+
       if (peek().value === "(") {
         consume();
 
@@ -83,9 +122,32 @@ const parseTokens = (tokens, filePath) => {
           const pathToken = consume();
           const cleanPath = pathToken.value.slice(1, -1);
 
+          let items = ["*(Entire Module)"];
+          const equalsIdx = requireIdx - 1;
+
+          if (equalsIdx >= 0 && tokens[equalsIdx].value === "=") {
+            const targetNode = tokens[equalsIdx - 1];
+
+            // const function = require(...)
+            if (targetNode.type === "Identifier") {
+              items = [targetNode.value];
+            }
+            // const { a, b } = require(...)
+            else if (targetNode.value === "}") {
+              items = [];
+              let scanIdx = equalsIdx - 2;
+              while (scanIdx >= 0 && tokens[scanIdx].value !== "{") {
+                if (tokens[scanIdx].type === "Identifier") {
+                  items.push(tokens[scanIdx].value);
+                }
+                scanIdx--;
+              }
+            }
+          }
+
           fileData.imports.push({
-            source: cleanPath,
-            items: ["*(CommonJS)"],
+            source: resolveImport(cleanPath),
+            items: items,
           });
         }
       }
