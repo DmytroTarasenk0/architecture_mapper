@@ -97,7 +97,9 @@ export default function App() {
                 source: fileNode.file,
                 target: imp.source,
                 importedItems: imp.items.join(", "),
+                isCircular: imp.circular || false,
               },
+              classes: imp.circular ? "circular" : "",
             });
           });
         });
@@ -146,6 +148,17 @@ export default function App() {
               },
             },
             {
+              selector: "edge.circular",
+              style: {
+                "line-color": "#ff0000",
+                "target-arrow-color": "#ff0000",
+                width: 3,
+                opacity: 1,
+                "line-style": "dashed",
+                "z-index": 50,
+              },
+            },
+            {
               selector: ":selected",
               style: {
                 "background-color": "#ff00ea",
@@ -187,6 +200,7 @@ export default function App() {
             source: edge.data("source"),
             target: edge.data("target"),
             items: edge.data("importedItems"),
+            isCircular: edge.data("isCircular"),
           });
         });
 
@@ -291,6 +305,24 @@ export default function App() {
               }}
             ></span>
             External NPM Package
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              marginBottom: "8px",
+            }}
+          >
+            <span
+              style={{
+                display: "inline-block",
+                width: "20px",
+                height: "3px",
+                borderBottom: "3px dashed #ff0000",
+                marginRight: "10px",
+              }}
+            ></span>
+            Circular Dependency Loop
           </div>
           <div style={{ display: "flex", alignItems: "center" }}>
             <span
@@ -399,6 +431,27 @@ export default function App() {
                 <br />
                 <span style={{ fontSize: "0.9em" }}>{details.target}</span>
               </p>
+
+              {details.isCircular && (
+                <div
+                  style={{
+                    backgroundColor: "#4a1111",
+                    padding: "10px",
+                    borderRadius: "4px",
+                    margin: "15px 0",
+                    border: "1px solid #ff0000",
+                  }}
+                >
+                  <strong style={{ color: "#ff6666" }}>
+                    Circular Dependency Detected.
+                  </strong>
+                  <p style={{ margin: "5px 0 0 0", fontSize: "0.9em" }}>
+                    This file imports a module that eventually imports it back,
+                    creating a loop.
+                  </p>
+                </div>
+              )}
+
               <p>
                 <strong>Imported Functions/Variables:</strong>
               </p>

@@ -164,7 +164,7 @@ const parseTokens = (tokens, filePath) => {
 
             // module.exports = { a, b }
             if (peek().value === "{") {
-              consume(); // eat '{'
+              consume();
               while (!isEOF() && peek().value !== "}") {
                 const item = consume();
                 if (item.type === "Identifier")
@@ -197,6 +197,42 @@ const parseTokens = (tokens, filePath) => {
   return fileData;
 };
 
+const detectCircularDependencies = (graph) => {
+  const nodeMap = new Map();
+  graph.forEach((node) => nodeMap.set(node.file, node));
+
+  const visiting = new Set();
+  const visited = new Set();
+
+  const dfs = (nodeId) => {
+    if (visiting.has(nodeId)) return true;
+    if (visited.has(nodeId)) return false;
+
+    visiting.add(nodeId);
+    const node = nodeMap.get(nodeId);
+
+    if (node) {
+      node.imports.forEach((imp) => {
+        if (visiting.has(imp.source)) {
+          imp.circular = true;
+        } else {
+          dfs(imp.source);
+        }
+      });
+    }
+
+    visiting.delete(nodeId);
+    visited.add(nodeId);
+    return false;
+  };
+
+  graph.forEach((node) => {
+    if (!visited.has(node.file)) {
+      dfs(node.file);
+    }
+  });
+};
+
 const buildGraph = (dir = "./") => {
   const files = findFiles(dir);
   const graph = [];
@@ -207,9 +243,9 @@ const buildGraph = (dir = "./") => {
     graph.push(parsedData);
   }
 
+  detectCircularDependencies(graph);
+
   return graph;
 };
-
-// console.log(JSON.stringify(buildGraph("./"), null, 2));
 
 export { buildGraph };
