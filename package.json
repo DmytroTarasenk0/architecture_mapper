@@ -1,19 +1,29 @@
 {
-  "name": "ast",
-  "version": "0.0.1",
-  "description": "Abstract Syntax Tree analyser for better codebase relation readability",
+  "name": "architecture-mapper",
+  "version": "1.0.0",
+  "description": "Abstract Syntax Tree analyser for visualising codebase architecture and dependencies",
   "keywords": [
-    "AST"
+    "ast",
+    "architecture",
+    "analyser",
+    "dependency-graph",
+    "visualiser"
   ],
-  "license": "ISC",
+  "license": "MIT",
   "author": "DmytroTarasenk0",
   "type": "module",
-  "main": "index.js",
   "bin": {
-    "ast": "bin/cli.js"
+    "architecture-mapper": "bin/cli.js",
+    "arch-map": "bin/cli.js"
   },
+  "files": [
+    "bin",
+    "src",
+    "dist"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "vite build",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "chalk": "^6.0.0",
